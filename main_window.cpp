@@ -1,22 +1,16 @@
 #include "main_window.h"
-#include "ui_mainwindow.h"
-#include <cassert>
-#include <sstream>
-#include <QLineEdit>
 
-MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-{
+MainWindow::MainWindow(QWidget *parent)
+        : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-    QLineEdit & input_line =  *(ui->input_edit);
+    QLineEdit &input_line = *(ui->input_edit);
     input_line.setFixedHeight(input_line.fontMetrics().height() * 2);
 
     output_label = new QLabel;
     output_label->setWordWrap(true);
     output_label->setAlignment(Qt::AlignLeft);
-    output_label ->setTextFormat(Qt::RichText);
+    output_label->setTextFormat(Qt::RichText);
     output_label->setText("Loading dictionary...<br>");
     ui->scroll_area->setWidget(output_label);
 
@@ -24,18 +18,16 @@ MainWindow::MainWindow(QWidget* parent)
     connect(&worker, &searching_worker::output_changed, this, &MainWindow::update_output);
 }
 
-void MainWindow::input_changed()
-{
+void MainWindow::input_changed() {
     QString val = ui->input_edit->text();
-    if (val.isEmpty()){
+    if (val.isEmpty()) {
         worker.set_input(std::nullopt);
     } else {
         worker.set_input(val.toUtf8().constData());
     }
 }
 
-QString MainWindow::format_output(searched_result const& result)
-{
+QString MainWindow::format_output(searched_result const &result) {
     std::stringstream ss;
     ss << result.input;
     if (result.partial || !result.words.empty())
@@ -55,8 +47,7 @@ QString MainWindow::format_output(searched_result const& result)
     return QString::fromStdString(ss.str());
 }
 
-void MainWindow::update_output()
-{
+void MainWindow::update_output() {
     std::optional<searched_result> result = worker.get_output();
     if (!result) {
         output_label->setText("");
@@ -64,5 +55,3 @@ void MainWindow::update_output()
     }
     output_label->setText(format_output(*result));
 }
-
-MainWindow::~MainWindow() = default;
