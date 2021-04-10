@@ -60,7 +60,6 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
     assert(!(*val).empty());
     std::string initial_val = *val;
     std::vector<std::string> picked_words;
-    std::vector<std::vector<size_t>> picked_words_positions;
     store_result(searched_result(*val, picked_words, true));
     std::unordered_map<char, size_t> letters_counter;
     std::unordered_map<char, std::unordered_set<size_t>> word_position_map;
@@ -89,9 +88,9 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
     for (auto to_check_word : to_check) {
         if (last_input_version != input_version)
             return;
-        std::pair<std::string, std::vector<size_t>>  res = util.search_sub_string(to_check_word, initial_val, p_array);
-        if (!res.first.empty()) {
-            picked_words.push_back(res.first);
+        std::string res = util.search_sub_string(to_check_word, initial_val, p_array);
+        if (!res.empty()) {
+            picked_words.push_back(res);
             store_result(searched_result(initial_val, picked_words, true));
         }
     }

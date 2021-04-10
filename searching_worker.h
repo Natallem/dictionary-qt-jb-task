@@ -15,7 +15,6 @@ struct searched_result
 
     std::string input;
     std::vector<std::string> words;
-    std::vector<std::vector<size_t>> same_positions;
     bool partial;
 };
 

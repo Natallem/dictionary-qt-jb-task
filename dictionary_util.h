@@ -14,7 +14,7 @@
 
 namespace dictionary_util {
 
-    std::pair<std::string, std::vector<size_t>>
+    std::string
     sub_string_search(std::string const &str, const std::string &pattern, const std::vector<int> &p_array);
 
     std::vector<int> p_array(std::string &pattern);

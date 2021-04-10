@@ -8,7 +8,7 @@
 #include <iomanip>
 #include <vector>
 
-std::pair<std::string, std::vector<size_t>> dictionary_util::sub_string_search(const std::string &str, const std::string &pattern,
+std::string dictionary_util::sub_string_search(const std::string &str, const std::string &pattern,
                                                const std::vector<int> &p_array) {
     int tail = -1;
     for (int i = 0; i < str.size(); i++) {
@@ -20,9 +20,9 @@ std::pair<std::string, std::vector<size_t>> dictionary_util::sub_string_search(c
             tail++;
 
         if (tail == pattern.size() - 1)
-            return {str, {}};
+            return str;
     }
-    return  {"", {}};;
+    return "";
 }
 
 std::vector<int> dictionary_util::p_array(std::string &pattern) {

@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget* parent)
     output_label->setWordWrap(true);
     output_label->setAlignment(Qt::AlignLeft);
     output_label ->setTextFormat(Qt::RichText);
-    output_label->setText("Loading dictionary...\n");
+    output_label->setText("Loading dictionary...<br>");
     ui->scroll_area->setWidget(output_label);
 
     connect(ui->input_edit, &QLineEdit::textChanged, this, &MainWindow::input_changed);
@@ -39,7 +39,7 @@ QString MainWindow::format_output(searched_result const& result)
     std::stringstream ss;
     ss << result.input;
     if (result.partial || !result.words.empty())
-        ss << " :\n";
+        ss << " :<br>";
 
     for (size_t i = 0; i != result.words.size(); ++i) {
         ss << result.words[i];
@@ -48,9 +48,9 @@ QString MainWindow::format_output(searched_result const& result)
     }
 
     if (result.partial)
-        ss << "…\n";
+        ss << "…<br>";
     else {
-        ss << "\n\nTotal occurrences number = " << result.words.size() << '\n';
+        ss << "<br><br>Total occurrences number = " << result.words.size() << "<br>";
     }
     return QString::fromStdString(ss.str());
 }

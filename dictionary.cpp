@@ -43,7 +43,7 @@ std::unordered_set<size_t> dictionary::get_words_by_char(char ch, size_t num) {
     return result;
 }
 
-std::pair<std::string, std::vector<size_t>>  dictionary::search_sub_string(size_t pos, const std::string &input, const std::vector<int> &p_array) {
+std::string  dictionary::search_sub_string(size_t pos, const std::string &input, const std::vector<int> &p_array) {
     std::string word;
     fin.clear();
     fin.seekg(pos);
