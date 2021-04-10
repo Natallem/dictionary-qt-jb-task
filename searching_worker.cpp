@@ -9,6 +9,7 @@ searched_result::searched_result(std::string input, std::vector<std::string> fac
 searching_worker::searching_worker()
         : util("..\\dic_2.txt"),
           input_version(INPUT_VERSION_QUIT + 1),
+          output_version(INPUT_VERSION_QUIT),
           worker_thread([this] {
               util.read_occurrences_from_file();
               thread_process();
@@ -20,43 +21,46 @@ searching_worker::~searching_worker() {
     worker_thread.join();
 }
 
-void searching_worker::set_input(std::optional<std::string> val) {
+void searching_worker::set_input(std::optional<std::string> val, bool is_input_seq) {
     {
         std::lock_guard lg(m);
         input = std::move(val);
+        is_seq = is_input_seq;
         ++input_version;
     }
     input_changed.notify_all();
 }
 
-std::optional<searched_result> searching_worker::get_output() const {
+std::pair<std::optional<searched_result>, uint64_t> searching_worker::get_output() const {
     std::lock_guard lg(m);
-    return output;
+    return {output, output_version};
 }
 
 void searching_worker::thread_process() {
     uint64_t last_input_version = 0;
     for (;;) {
         std::optional<std::string> input_copy;
+        bool is_cur_seq;
         {
             std::unique_lock lg(m);
             input_changed.wait(lg, [&] {
                 return input_version != last_input_version;
             });
             last_input_version = input_version;
+            is_cur_seq = is_seq;
             if (last_input_version == INPUT_VERSION_QUIT)
                 break;
             input_copy = std::move(input);
         }
         std::optional<searched_result> result;
         if (input_copy)
-            search_words(last_input_version, input_copy);
+            search_words(last_input_version, input_copy, is_cur_seq );
         else
             store_result(std::nullopt);
     }
 }
 
-void searching_worker::search_words(uint64_t last_input_version, std::optional<std::string> &val) {
+void searching_worker::search_words(uint64_t last_input_version, std::optional<std::string> &val, bool is_cur_seq) {
     assert(!(*val).empty());
     std::string initial_val = *val;
     std::vector<std::string> picked_words;
@@ -84,14 +88,26 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
         if (is_ok)
             to_check.push_back(word);
     }
-    auto p_array = dictionary_util::p_array(initial_val);
-    for (auto to_check_word : to_check) {
-        if (last_input_version != input_version)
-            return;
-        std::string res = util.search_sub_string(to_check_word, initial_val, p_array);
-        if (!res.empty()) {
-            picked_words.push_back(res);
-            store_result(searched_result(initial_val, picked_words, true));
+    if (!is_cur_seq) {
+        auto p_array = dictionary_util::p_array(initial_val);
+        for (auto to_check_word : to_check) {
+            if (last_input_version != input_version)
+                return;
+            std::string res = util.search_sub_string(to_check_word, initial_val, p_array);
+            if (!res.empty()) {
+                picked_words.push_back(res);
+                store_result(searched_result(initial_val, picked_words, true));
+            }
+        }
+    } else {
+        for (auto to_check_word : to_check) {
+            if (last_input_version != input_version)
+                return;
+            std::string res = util.search_sub_string_seq(to_check_word, initial_val);
+            if (!res.empty()) {
+                picked_words.push_back(res);
+                store_result(searched_result(initial_val, picked_words, true));
+            }
         }
     }
     store_result(searched_result(initial_val, picked_words, false));
@@ -100,6 +116,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
 void searching_worker::store_result(std::optional<searched_result> const &result) {
     std::lock_guard lg(m);
     output = result;
+    ++output_version;
 
     if (!notify_output_queued) {
         QMetaObject::invokeMethod(this, "notify_output");

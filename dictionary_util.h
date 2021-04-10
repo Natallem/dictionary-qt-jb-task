@@ -31,6 +31,9 @@ namespace dictionary_util {
                     const std::unordered_map<char, std::unordered_map<size_t, std::vector<size_t>>> &new_);
 
     static const int margin_char_length = 10;
+
+
+    std::string sub_string_seq_search(std::basic_string<char> &&word, const std::string &pattern);
 };
 
 

@@ -9,7 +9,8 @@ int main(int argc, char *argv[])
 //    std::string str = "helloodfios";
 //    str.insert(4, "hello");
 //    dictionary_util::sub_string_search(std::move(str), pattern,dictionary_util::p_array(pattern));
-//    std::cout << dictionary_util::sub_string_search(std::move(str), pattern,dictionary_util::p_array(pattern));
+//    std::cout << dictionary_util::sub_string_search_seq(std::move(str), pattern,dictionary_util::p_array(pattern));
+//    std::cout << dictionary_util::sub_string_seq_search(std::move(str), pattern);
     QApplication a(argc, argv);
     MainWindow w;
     w.show();

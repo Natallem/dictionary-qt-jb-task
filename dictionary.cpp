@@ -50,3 +50,11 @@ std::string  dictionary::search_sub_string(size_t pos, const std::string &input,
     fin >> word;
     return dictionary_util::sub_string_search(std::move(word), input, p_array);
 }
+
+std::string dictionary::search_sub_string_seq(size_t pos, const std::string &pattern) {
+    std::string word;
+    fin.clear();
+    fin.seekg(pos);
+    fin >> word;
+    return dictionary_util::sub_string_seq_search(std::move(word), pattern);
+}

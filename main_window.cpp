@@ -1,3 +1,4 @@
+#include <iostream>
 #include "main_window.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -15,19 +16,54 @@ MainWindow::MainWindow(QWidget *parent)
     ui->scroll_area->setWidget(output_label);
 
     connect(ui->input_edit, &QLineEdit::textChanged, this, &MainWindow::input_changed);
+    connect(ui->check_box, &QCheckBox::clicked, this, &MainWindow::check_box_state_changed);
     connect(&worker, &searching_worker::output_changed, this, &MainWindow::update_output);
 }
+
+void MainWindow::check_box_state_changed() {
+    bool cur_checked = ui->check_box->isChecked();
+    if (is_checked != cur_checked){
+        is_checked = cur_checked;
+        input_changed();
+    }
+}
+
 
 void MainWindow::input_changed() {
     QString val = ui->input_edit->text();
     if (val.isEmpty()) {
-        worker.set_input(std::nullopt);
+        worker.set_input(std::nullopt, is_checked);
     } else {
-        worker.set_input(val.toUtf8().constData());
+        worker.set_input(val.toUtf8().constData(), is_checked);
     }
 }
 
-QString MainWindow::format_output(searched_result const &result) {
+void print(const std::string &str) {
+    std::cout << str << "\n";
+    std::cout.flush();
+}
+
+void MainWindow::update_output() {
+    if (updating)
+        return;
+    updating = true;
+    retry:
+    auto result_pair = worker.get_output();
+    if (!result_pair.first) {
+        output_label->setText("");
+        updating = false;
+        return;
+    }
+    QString str = format_output(*result_pair.first, result_pair.second);
+    if (str.isEmpty() || result_pair.second != worker.output_version) {
+        goto retry;
+    } else {
+        output_label->setText(str);
+    }
+    updating = false;
+}
+
+QString MainWindow::format_output(const searched_result &result, uint64_t version) {
     std::stringstream ss;
     ss << result.input;
     if (result.partial || !result.words.empty())
@@ -36,22 +72,17 @@ QString MainWindow::format_output(searched_result const &result) {
         ss << result.words[i];
         if ((i + 1) != result.words.size() || result.partial)
             ss << ", ";
-
+        if (i % 10 == 0) {
+            QApplication::processEvents(QEventLoop::AllEvents);
+            if (version != worker.output_version)
+                return QString();
+        }
     }
 
     if (result.partial)
         ss << "…<br>";
     else {
-        ss << "<br><br>Total occurrences number = " << result.words.size() << "<br>";
+        ss << "<br><br>Total occurrences number = <b>" << result.words.size() << "</b><br>";
     }
     return QString::fromStdString(ss.str());
-}
-
-void MainWindow::update_output() {
-    std::optional<searched_result> result = worker.get_output();
-    if (!result) {
-        output_label->setText("");
-        return;
-    }
-    output_label->setText(format_output(*result));
 }

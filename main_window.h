@@ -28,7 +28,6 @@ public:
 
     void input_changed();
 
-    static QString format_output(searched_result const &result);
 
 private slots:
 
@@ -40,6 +39,12 @@ private:
     QLabel *output_label;
 
     QString format_output(const searched_result &result, uint64_t version);
+
+    bool updating = false;
+
+    void check_box_state_changed();
+
+    std::atomic<bool> is_checked = false;
 };
 
 #endif // MAIN_WINDOW_H

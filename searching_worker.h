@@ -22,12 +22,17 @@ class searching_worker : public QObject
 {
 Q_OBJECT
 
+
+
 public:
+    void set_input(std::optional<std::string> val, bool is_input_seq);
+    std::atomic<uint64_t> input_version;
+    std::atomic<uint64_t> output_version;
     searching_worker();
     ~searching_worker();
 
-    void set_input(std::optional<std::string> val);
-    std::optional<searched_result> get_output() const;
+//    void set_input(std::optional<std::string> val);
+    std::pair<std::optional<searched_result>, uint64_t> get_output() const;
 
 signals:
     void output_changed();
@@ -42,9 +47,9 @@ private slots:
 private:
     dictionary util;
     mutable std::mutex m;
-    std::atomic<uint64_t> input_version;
     std::condition_variable input_changed;
     std::optional<std::string> input;
+    bool is_seq;
     std::optional<searched_result> output;
     bool notify_output_queued = false;
 
@@ -53,4 +58,6 @@ private:
     static uint64_t const INPUT_VERSION_QUIT = 0;
 
     void search_words(uint64_t last_input_version, std::optional<std::string> &val);
+
+    void search_words(uint64_t last_input_version, std::optional<std::string> &val, bool is_cur_seq);
 };

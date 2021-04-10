@@ -19,13 +19,44 @@ std::string dictionary_util::sub_string_search(std::string &&str, const std::str
         if (str[i] == pattern[tail + 1])
             tail++;
 
-        if (tail == pattern.size() - 1){
+        if (tail == pattern.size() - 1) {
 //            return std::move(str);
-            return std::move(str.insert(i+1,"</b>").insert(i-tail, "<b>"));
+            return std::move(str.insert(i + 1, "</b>").insert(i - tail, "<b>"));
         }
     }
     return "";
 }
+
+std::string dictionary_util::sub_string_seq_search(std::basic_string<char> &&word, const std::string &pattern) {
+    std::string res;
+    bool bold_is_open = false;
+    size_t ptr_pattern, ptr_word;
+    for (ptr_word = 0, ptr_pattern = 0;
+         ptr_word < word.size() && ptr_pattern < pattern.size(); ++ptr_word) {
+        if (word[ptr_word] == pattern[ptr_pattern]) {
+            if (!bold_is_open) {
+                res += "<b>";
+                bold_is_open = true;
+            }
+            ++ptr_pattern;
+        } else {
+            if (bold_is_open) {
+                res += "</b>";
+                bold_is_open = false;
+            }
+        }
+        res += word[ptr_word];
+    }
+    if (bold_is_open){
+        res +=  "</b>";
+    }
+    if (ptr_pattern == pattern.size()) {
+        res += word.substr(ptr_word, word.size());
+        return res;
+    }
+    return "";
+}
+
 
 std::vector<int> dictionary_util::p_array(std::string &pattern) {
     std::vector<int> result(pattern.size(), -1);
@@ -119,4 +150,3 @@ bool dictionary_util::check_same(const std::unordered_map<char, std::unordered_m
     }
     return prev == new_;
 }
-
