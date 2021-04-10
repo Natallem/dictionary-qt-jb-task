@@ -38,6 +38,8 @@ private:
     std::unique_ptr<Ui::MainWindow> ui;
     searching_worker worker;
     QLabel *output_label;
+
+    QString format_output(const searched_result &result, uint64_t version);
 };
 
 #endif // MAIN_WINDOW_H

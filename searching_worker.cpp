@@ -2,22 +2,9 @@
 #include "dictionary_util.h"
 #include <cassert>
 #include <unordered_set>
-#include <utility>
 
-searched_result::searched_result(std::string input) : input(std::move(input)) {}
-
-void searched_result::append(std::string &&word) {
-//    words.append(", ");
-    words.append(std::move(word) + ", ");
-}
-
-void searched_result::complete() {
-    if (!words.empty()) {
-        words.pop_back();
-        words.pop_back();
-    }
-    partial = false;
-}
+searched_result::searched_result(std::string input, std::vector<std::string> factors, bool incomplete)
+        : input(std::move(input)), words(std::move(factors)), partial(incomplete) {}
 
 searching_worker::searching_worker()
         : util("..\\dic_2.txt"),
@@ -35,7 +22,7 @@ searching_worker::~searching_worker() {
 
 void searching_worker::set_input(std::optional<std::string> val) {
     {
-        std::lock_guard lg(notify_output_mutex);
+        std::lock_guard lg(m);
         input = std::move(val);
         ++input_version;
     }
@@ -43,7 +30,7 @@ void searching_worker::set_input(std::optional<std::string> val) {
 }
 
 std::optional<searched_result> searching_worker::get_output() const {
-    std::lock_guard lg(notify_output_mutex);
+    std::lock_guard lg(m);
     return output;
 }
 
@@ -52,7 +39,7 @@ void searching_worker::thread_process() {
     for (;;) {
         std::optional<std::string> input_copy;
         {
-            std::unique_lock lg(notify_output_mutex);
+            std::unique_lock lg(m);
             input_changed.wait(lg, [&] {
                 return input_version != last_input_version;
             });
@@ -65,15 +52,15 @@ void searching_worker::thread_process() {
         if (input_copy)
             search_words(last_input_version, input_copy);
         else
-            change_output(std::nullopt);
+            store_result(std::nullopt);
     }
 }
 
 void searching_worker::search_words(uint64_t last_input_version, std::optional<std::string> &val) {
     assert(!(*val).empty());
     std::string initial_val = *val;
-//    std::vector<std::string> picked_words;
-    change_output(searched_result(*val));
+    std::vector<std::string> picked_words;
+    store_result(searched_result(*val, picked_words, true));
     std::unordered_map<char, size_t> letters_counter;
     std::unordered_map<char, std::unordered_set<size_t>> word_position_map;
     std::vector<size_t> to_check;
@@ -103,48 +90,17 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
             return;
         std::string res = util.search_sub_string(to_check_word, initial_val, p_array);
         if (!res.empty()) {
-//            picked_words.push_back(res);
-            append_word_to_output(std::move(res));
-//            notify_output(searched_result(initial_val, picked_words, true));
+            picked_words.push_back(res);
+            store_result(searched_result(initial_val, picked_words, true));
         }
     }
-    complete_output();
-//    notify_output(searched_result(initial_val, picked_words, false));
+    store_result(searched_result(initial_val, picked_words, false));
 }
 
-/*
+void searching_worker::store_result(std::optional<searched_result> const &result) {
+    std::lock_guard lg(m);
+    output = result;
 
-void searching_worker::notify_output(std::optional<searched_result> const &result) {
-    std::lock_guard lg(notify_output_mutex);
-    if (!notify_output_queued) {
-        QMetaObject::invokeMethod(this, "notify_output");
-        notify_output_queued = true;
-    }
-}
-*/
-
-
-void searching_worker::change_output(std::optional<searched_result> &&result) {
-    std::lock_guard lg(notify_output_mutex);
-    output = std::move(result);
-    if (!notify_output_queued) {
-        QMetaObject::invokeMethod(this, "notify_output");
-        notify_output_queued = true;
-    }
-}
-
-void searching_worker::append_word_to_output(std::string &&result) {
-    std::lock_guard lg(notify_output_mutex);
-    output->append(std::move(result));
-    if (!notify_output_queued) {
-        QMetaObject::invokeMethod(this, "notify_output");
-        notify_output_queued = true;
-    }
-}
-
-void searching_worker::complete_output() {
-    std::lock_guard lg(notify_output_mutex);
-    output->complete();
     if (!notify_output_queued) {
         QMetaObject::invokeMethod(this, "notify_output");
         notify_output_queued = true;
@@ -153,9 +109,8 @@ void searching_worker::complete_output() {
 
 void searching_worker::notify_output() {
     {
-        std::lock_guard lg(notify_output_mutex);
+        std::lock_guard lg(m);
         notify_output_queued = false;
     }
     emit output_changed();
 }
-

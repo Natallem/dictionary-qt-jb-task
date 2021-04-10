@@ -20,8 +20,8 @@ std::string dictionary_util::sub_string_search(std::string &&str, const std::str
             tail++;
 
         if (tail == pattern.size() - 1){
-            return std::move(str);
-//            return std::move(str.insert(i+1,"</b>").insert(i-tail, "<b>"));
+//            return std::move(str);
+            return std::move(str.insert(i+1,"</b>").insert(i-tail, "<b>"));
         }
     }
     return "";

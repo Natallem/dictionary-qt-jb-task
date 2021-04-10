@@ -32,21 +32,18 @@ QString MainWindow::format_output(searched_result const &result) {
     ss << result.input;
     if (result.partial || !result.words.empty())
         ss << " :<br>";
-    ss << result.words;
+    for (size_t i = 0; i != result.words.size(); ++i) {
+        ss << result.words[i];
+        if ((i + 1) != result.words.size() || result.partial)
+            ss << ", ";
 
-
-
-//    for (size_t i = 0; i != result.words.size(); ++i) {
-//        ss << result.words[i];
-//        if ((i + 1) != result.words.size() || result.partial)
-//            ss << ", ";
-//    }
+    }
 
     if (result.partial)
         ss << "…<br>";
-//    else {
-//        ss << "<br><br>Total occurrences number = " << result.words << "<br>";
-//    }
+    else {
+        ss << "<br><br>Total occurrences number = " << result.words.size() << "<br>";
+    }
     return QString::fromStdString(ss.str());
 }
 

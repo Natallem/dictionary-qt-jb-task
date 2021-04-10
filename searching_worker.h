@@ -11,20 +11,16 @@
 
 struct searched_result
 {
-    searched_result(std::string input);
-
-    void append(std::string && word);
-
-    void complete();
+    searched_result(std::string input, std::vector<std::string> factors, bool partial);
 
     std::string input;
-    std::string words;
-    bool partial = true;
+    std::vector<std::string> words;
+    bool partial;
 };
 
 class searching_worker : public QObject
 {
-    Q_OBJECT
+Q_OBJECT
 
 public:
     searching_worker();
@@ -38,14 +34,14 @@ signals:
 
 private:
     void thread_process();
-    void notify_output(std::optional<searched_result> const& result);
+    void store_result(std::optional<searched_result> const& result);
 
 private slots:
     void notify_output();
 
 private:
     dictionary util;
-    mutable std::mutex notify_output_mutex;
+    mutable std::mutex m;
     std::atomic<uint64_t> input_version;
     std::condition_variable input_changed;
     std::optional<std::string> input;
@@ -57,11 +53,4 @@ private:
     static uint64_t const INPUT_VERSION_QUIT = 0;
 
     void search_words(uint64_t last_input_version, std::optional<std::string> &val);
-
-    void change_output(std::optional<searched_result> &&result);
-
-    void append_word_to_output(std::string &&result);
-
-    void complete_output();
-
 };
