@@ -4,9 +4,6 @@
 MainWindow::MainWindow(QWidget *parent)
         : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
-
-//    QTextEdit t = new QTextEdit();
-//    t.append()
     QLineEdit &input_line = *(ui->input_edit);
     input_line.setFixedHeight(input_line.fontMetrics().height() * 2);
 
@@ -29,7 +26,6 @@ void MainWindow::check_box_state_changed() {
         input_changed();
     }
 }
-
 
 void MainWindow::input_changed() {
     QString val = ui->input_edit->text();
