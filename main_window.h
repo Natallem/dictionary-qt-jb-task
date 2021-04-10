@@ -8,6 +8,8 @@
 #include <QLabel>
 #include <cassert>
 #include <QLineEdit>
+#include <QTextEdit>
+
 
 #include "ui_mainwindow.h"
 #include "searching_worker.h"
@@ -36,7 +38,7 @@ private slots:
 private:
     std::unique_ptr<Ui::MainWindow> ui;
     searching_worker worker;
-    QLabel *output_label;
+    QTextEdit *output_label;
 
     QString format_output(const searched_result &result, uint64_t version);
 

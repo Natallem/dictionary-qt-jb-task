@@ -5,13 +5,15 @@ MainWindow::MainWindow(QWidget *parent)
         : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
+//    QTextEdit t = new QTextEdit();
+//    t.append()
     QLineEdit &input_line = *(ui->input_edit);
     input_line.setFixedHeight(input_line.fontMetrics().height() * 2);
 
-    output_label = new QLabel;
-    output_label->setWordWrap(true);
+    output_label = new QTextEdit();
+    output_label->setReadOnly(true);
+    output_label->setAcceptRichText(true);
     output_label->setAlignment(Qt::AlignLeft);
-    output_label->setTextFormat(Qt::RichText);
     output_label->setText("Loading dictionary...<br>");
     ui->scroll_area->setWidget(output_label);
 
