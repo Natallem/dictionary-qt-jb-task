@@ -16,4 +16,4 @@
   
 
 * __cmake__ with Qt6 and `CMakeLists.txt`
-    > To run with __cmake__ in __CLion__ do not forget to set _-DCMAKE_PREFIX_PATH=<path_to_your_Qt6_cmake_dir>_ in ```File | Settings | Build, Execution, Deployment | CMake | CMake options``` (ex. ```C:\ProgramFiles\Qt\6.0.1\mingw81_64\lib\cmake```)
+    > To run with __cmake__ in __CLion__ do not forget to set _-DCMAKE_PREFIX_PATH=<path_to_your_Qt6_cmake_dir>_ in ```File | Settings | Build, Execution, Deployment | CMake | CMake options``` (ex. ```-DCMAKE_PREFIX_PATH=C:\ProgramFiles\Qt\6.0.1\mingw81_64\lib\cmake```)
