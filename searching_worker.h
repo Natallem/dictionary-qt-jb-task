@@ -39,7 +39,7 @@ public:
     ~searching_worker();
 
 //    void set_input(std::optional<std::string> val);
-    std::pair<searched_result, uint64_t> get_output();
+    std::tuple<searched_result, uint64_t, uint64_t> get_output();
 
 signals:
 

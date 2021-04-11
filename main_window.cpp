@@ -47,15 +47,15 @@ void MainWindow::update_output() {
         return;
     updating = true;
     retry:
-    auto result_pair = worker.get_output();
-    if (result_pair.first.input.empty()) {
+    auto[res, input_v, output_v] = worker.get_output();
+    if (res.input.empty()) {
         output_label->setText("");
         updating = false;
         return;
     }
     bool to_append = false;
-    QString str = format_output(result_pair.first, result_pair.second, to_append);
-    if (str.isEmpty() || result_pair.second != worker.output_version) {
+    QString str = format_output(res, input_v, to_append);
+    if (str.isEmpty()) {
         goto retry;
     } else {
         if (to_append) {
@@ -69,11 +69,13 @@ void MainWindow::update_output() {
         } else {
             output_label->setText(str);
         }
+        if (output_v != worker.output_version)
+            goto retry;
     }
     updating = false;
 }
 
-QString MainWindow::format_output(const searched_result &result, uint64_t version, bool &to_append) {
+QString MainWindow::format_output(const searched_result &result, uint64_t input_v, bool &to_append) {
     std::stringstream ss;
     if (cur_output_version != result.version) {
         cur_output_version = result.version;
@@ -89,13 +91,13 @@ QString MainWindow::format_output(const searched_result &result, uint64_t versio
         ss << result.words[i] << ", ";
         if (i % 10 == 0) {
             QApplication::processEvents(QEventLoop::AllEvents);
-            if (version != worker.output_version)
+            if (input_v != worker.input_version)
                 return QString();
         }
     }
 
     if (!result.partial) {
-        ss << "<br><br>Total occurrences number = <b>" << result.words.size() << "</b><br>";
+        ss << "<br><br>Total occurrences number = <b>" << result.total_occurrences_number << "</b><br>";
     }
 
     return QString::fromStdString(ss.str());

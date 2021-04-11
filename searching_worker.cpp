@@ -39,9 +39,9 @@ void searching_worker::set_input(std::optional<std::string> val, bool is_input_s
     input_changed.notify_all();
 }
 
-std::pair<searched_result, uint64_t> searching_worker::get_output() {
+std::tuple<searched_result, uint64_t, uint64_t> searching_worker::get_output() {
     std::lock_guard lg(m);
-    return {searched_result(std::move(output)), output_version};
+    return {searched_result(std::move(output)),input_version, output_version};
 }
 
 void searching_worker::thread_process() {
