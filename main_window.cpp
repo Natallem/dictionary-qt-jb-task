@@ -87,8 +87,12 @@ QString MainWindow::format_output(const searched_result &result, uint64_t input_
         to_append = true;
     }
     for (size_t i = 0; i != result.words.size(); ++i) {
-
-        ss << result.words[i] << ", ";
+        if (!is_first_word){
+            ss << ", ";
+        }else {
+            is_first_word = false;
+        }
+        ss << result.words[i];
         if (i % 10 == 0) {
             QApplication::processEvents(QEventLoop::AllEvents);
             if (input_v != worker.input_version)
