@@ -3,13 +3,21 @@
 #include <cassert>
 #include <unordered_set>
 
-searched_result::searched_result(std::string input, std::vector<std::string> factors, bool incomplete)
-        : input(std::move(input)), words(std::move(factors)), partial(incomplete) {}
+searched_result::searched_result(uint64_t version) : version(version) {}
+
+searched_result::searched_result(std::string input, uint64_t version) : input(std::move(input)), version(version) {}
+
+searched_result::searched_result(searched_result &&other) noexcept: input(other.input), words(std::move(other.words)),
+                                                                    partial(other.partial), version(other.version),
+                                                                    total_occurrences_number(
+                                                                            other.total_occurrences_number) {
+}
 
 searching_worker::searching_worker()
         : util("..\\dic_2.txt"),
           input_version(INPUT_VERSION_QUIT + 1),
           output_version(INPUT_VERSION_QUIT),
+          output(0),
           worker_thread([this] {
               util.read_occurrences_from_file();
               thread_process();
@@ -31,9 +39,9 @@ void searching_worker::set_input(std::optional<std::string> val, bool is_input_s
     input_changed.notify_all();
 }
 
-std::pair<std::optional<searched_result>, uint64_t> searching_worker::get_output() const {
+std::pair<searched_result, uint64_t> searching_worker::get_output() {
     std::lock_guard lg(m);
-    return {output, output_version};
+    return {searched_result(std::move(output)), output_version};
 }
 
 void searching_worker::thread_process() {
@@ -52,19 +60,18 @@ void searching_worker::thread_process() {
                 break;
             input_copy = std::move(input);
         }
-        std::optional<searched_result> result;
+//        std::optional<searched_result> result;
         if (input_copy)
-            search_words(last_input_version, input_copy, is_cur_seq );
+            search_words(last_input_version, input_copy, is_cur_seq);
         else
-            store_result(std::nullopt);
+            store_new_output_result(last_input_version, "");//todo убрать обертку
     }
 }
 
 void searching_worker::search_words(uint64_t last_input_version, std::optional<std::string> &val, bool is_cur_seq) {
     assert(!(*val).empty());
     std::string initial_val = *val;
-    std::vector<std::string> picked_words;
-    store_result(searched_result(*val, picked_words, true));
+    store_new_output_result(last_input_version, initial_val);
     std::unordered_map<char, size_t> letters_counter;
     std::unordered_map<char, std::unordered_set<size_t>> word_position_map;
     std::vector<size_t> to_check;
@@ -95,8 +102,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
                 return;
             std::string res = util.search_sub_string(to_check_word, initial_val, p_array);
             if (!res.empty()) {
-                picked_words.push_back(res);
-                store_result(searched_result(initial_val, picked_words, true));
+                add_new_word_to_output_result(last_input_version, std::move(res));
             }
         }
     } else {
@@ -105,19 +111,46 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
                 return;
             std::string res = util.search_sub_string_seq(to_check_word, initial_val);
             if (!res.empty()) {
-                picked_words.push_back(res);
-                store_result(searched_result(initial_val, picked_words, true));
+                add_new_word_to_output_result(last_input_version, std::move(res));
             }
         }
     }
-    store_result(searched_result(initial_val, picked_words, false));
+    complete_output_result(last_input_version);
 }
 
-void searching_worker::store_result(std::optional<searched_result> const &result) {
+void searching_worker::complete_output_result(uint64_t last_input_version) {
     std::lock_guard lg(m);
-    output = result;
+    if (output.version != last_input_version)
+        return;
+    output.partial = false;
     ++output_version;
+    if (!notify_output_queued) {
+        QMetaObject::invokeMethod(this, "notify_output");
+        notify_output_queued = true;
+    }
+}
 
+void searching_worker::add_new_word_to_output_result(uint64_t last_input_version, std::string &&word) {
+    std::lock_guard lg(m);
+    if (output.version != last_input_version)
+        return;
+    output.words.push_back(std::move(word));
+    ++output.total_occurrences_number;
+    ++output_version;
+    if (!notify_output_queued) {
+        QMetaObject::invokeMethod(this, "notify_output");
+        notify_output_queued = true;
+    }
+}
+
+void searching_worker::store_new_output_result(uint64_t last_input_version, const std::string &input_str) {
+    std::lock_guard lg(m);
+    output.version = last_input_version;
+    output.input = input_str;
+    output.partial = !input_str.empty();
+    output.words.clear();
+    output.total_occurrences_number = 0;
+    ++output_version;
     if (!notify_output_queued) {
         QMetaObject::invokeMethod(this, "notify_output");
         notify_output_queued = true;

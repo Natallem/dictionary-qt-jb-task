@@ -40,13 +40,18 @@ private:
     searching_worker worker;
     QTextEdit *output_label;
 
-    QString format_output(const searched_result &result, uint64_t version);
-
     bool updating = false;
 
     void check_box_state_changed();
+    uint64_t cur_output_version = 0;
+    bool is_first_word = true;
+
 
     std::atomic<bool> is_checked = false;
+
+    std::pair<QString, QString> format_output(const searched_result &result, uint64_t version, bool &to_append, bool &is_ready);
+
+    QString format_output(const searched_result &result, uint64_t version, bool &to_append);
 };
 
 #endif // MAIN_WINDOW_H

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <QColorDialog>
 #include "main_window.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -21,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::check_box_state_changed() {
     bool cur_checked = ui->check_box->isChecked();
-    if (is_checked != cur_checked){
+    if (is_checked != cur_checked) {
         is_checked = cur_checked;
         input_changed();
     }
@@ -47,29 +48,45 @@ void MainWindow::update_output() {
     updating = true;
     retry:
     auto result_pair = worker.get_output();
-    if (!result_pair.first) {
+    if (result_pair.first.input.empty()) {
         output_label->setText("");
         updating = false;
         return;
     }
-    QString str = format_output(*result_pair.first, result_pair.second);
+    bool to_append = false;
+    QString str = format_output(result_pair.first, result_pair.second, to_append);
     if (str.isEmpty() || result_pair.second != worker.output_version) {
         goto retry;
     } else {
-        output_label->setText(str);
+        if (to_append) {
+            auto cur_cursor = output_label->textCursor().position();
+            output_label->moveCursor(QTextCursor::End);
+            output_label->insertHtml(str);
+            QTextCursor cursor = output_label->textCursor();
+            cursor.setPosition(cur_cursor, QTextCursor::MoveAnchor);
+            output_label->setTextCursor(cursor);
+//            output_label->append(str);
+        } else {
+            output_label->setText(str);
+        }
     }
     updating = false;
 }
 
-QString MainWindow::format_output(const searched_result &result, uint64_t version) {
+QString MainWindow::format_output(const searched_result &result, uint64_t version, bool &to_append) {
     std::stringstream ss;
-    ss << result.input;
-    if (result.partial || !result.words.empty())
-        ss << " :<br>";
+    if (cur_output_version != result.version) {
+        cur_output_version = result.version;
+        is_first_word = true;
+        ss << result.input;
+        if (result.partial || !result.words.empty())
+            ss << " :<br>";
+    } else {
+        to_append = true;
+    }
     for (size_t i = 0; i != result.words.size(); ++i) {
-        ss << result.words[i];
-        if ((i + 1) != result.words.size() || result.partial)
-            ss << ", ";
+
+        ss << result.words[i] << ", ";
         if (i % 10 == 0) {
             QApplication::processEvents(QEventLoop::AllEvents);
             if (version != worker.output_version)
@@ -77,10 +94,9 @@ QString MainWindow::format_output(const searched_result &result, uint64_t versio
         }
     }
 
-    if (result.partial)
-        ss << "…<br>";
-    else {
+    if (!result.partial) {
         ss << "<br><br>Total occurrences number = <b>" << result.words.size() << "</b><br>";
     }
+
     return QString::fromStdString(ss.str());
 }
