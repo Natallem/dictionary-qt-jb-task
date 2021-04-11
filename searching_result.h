@@ -19,6 +19,7 @@ struct searching_result {
     uint64_t total_occurrences_number = 0;
     bool partial = true;
     uint64_t input_version = 0;
+    bool wait_to_take = false;
 };
 
 #endif //DICTIONARY_SEARCHING_RESULT_H

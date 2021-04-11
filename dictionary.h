@@ -18,6 +18,8 @@ public:
 
     std::string search_sub_string_seq(size_t pos, const std::string &pattern);
 
+    bool is_open() const;
+
 private:
     std::ifstream fin;
     std::unordered_map<char, std::map<size_t, std::unordered_set<size_t>>> occurrences;

@@ -50,6 +50,10 @@ private:
     void check_box_state_changed();
 
     QString format_output(const searching_result &result, uint64_t input_v, uint64_t output_v, bool &to_append);
+
+    bool format_output(const searching_result &result, uint64_t input_v);
+
+    void flush_output(std::stringstream &ss);
 };
 
 #endif // MAIN_WINDOW_H

@@ -4,14 +4,15 @@
 #include "searching_result.h"
 #include <cassert>
 #include <unordered_set>
+#include <iostream>
 
 searching_worker::searching_worker()
-        : util(constants::processed_dictionary_file_name),
+        : dict(constants::processed_dictionary_file_name),
           worker_input_version(constants::INPUT_VERSION_QUIT + 1),
           output_version(constants::INPUT_VERSION_QUIT),
           output(0),
           worker_thread([this] {
-              util.read_occurrences_from_file();
+              dict.read_occurrences_from_file();
               thread_process();
           }) {}
 
@@ -33,6 +34,7 @@ void searching_worker::set_input(std::optional<std::string> val, bool is_input_s
 
 std::tuple<searching_result, uint64_t, uint64_t> searching_worker::get_output() {
     std::lock_guard lg(m);
+
     return {searching_result(std::move(output)), worker_input_version, output_version};
 }
 
@@ -70,7 +72,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
         ++letters_counter[ch];
     }
     for (auto p : letters_counter) {
-        word_position_map[p.first] = util.get_words_by_char(p.first, p.second);
+        word_position_map[p.first] = dict.get_words_by_char(p.first, p.second);
     }
     char picked = word_position_map.begin()->first;
     for (auto word : word_position_map[picked]) {
@@ -92,7 +94,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
         for (auto to_check_word : to_check) {
             if (last_input_version != worker_input_version)
                 return;
-            std::string res = util.search_sub_string(to_check_word, initial_val, p_array);
+            std::string res = dict.search_sub_string(to_check_word, initial_val, p_array);
             if (!res.empty()) {
                 add_new_word_to_output_result(last_input_version, std::move(res));
             }
@@ -101,7 +103,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
         for (auto to_check_word : to_check) {
             if (last_input_version != worker_input_version)
                 return;
-            std::string res = util.search_sub_string_seq(to_check_word, initial_val);
+            std::string res = dict.search_sub_string_seq(to_check_word, initial_val);
             if (!res.empty()) {
                 add_new_word_to_output_result(last_input_version, std::move(res));
             }
@@ -139,6 +141,10 @@ void searching_worker::store_new_output_result(uint64_t last_input_version, cons
 
 void searching_worker::try_to_notify_output() {
     ++output_version;
+
+    if (output.wait_to_take) { return; }
+    else { output.wait_to_take = true; }
+
     if (!notify_output_queued) {
         QMetaObject::invokeMethod(this, "notify_output");
         notify_output_queued = true;

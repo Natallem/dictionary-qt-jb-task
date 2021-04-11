@@ -1,4 +1,5 @@
 #include <QColorDialog>
+#include <iostream>
 #include "main_window.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -11,12 +12,18 @@ MainWindow::MainWindow(QWidget *parent)
     output_label->setReadOnly(true);
     output_label->setAcceptRichText(true);
     output_label->setAlignment(Qt::AlignLeft);
-    output_label->setText("Loading dictionary...<br>");
     ui->scroll_area->setWidget(output_label);
-
-    connect(ui->input_edit, &QLineEdit::textChanged, this, &MainWindow::input_changed);
-    connect(ui->check_box, &QCheckBox::clicked, this, &MainWindow::check_box_state_changed);
-    connect(&worker, &searching_worker::output_changed, this, &MainWindow::update_output);
+    if (worker.dict.is_open()){
+        output_label->setText("Loading dictionary...<br>");
+        connect(ui->input_edit, &QLineEdit::textChanged, this, &MainWindow::input_changed);
+        connect(ui->check_box, &QCheckBox::clicked, this, &MainWindow::check_box_state_changed);
+        connect(&worker, &searching_worker::output_changed, this, &MainWindow::update_output);
+    } else {
+        QPalette palette;
+        palette.setColor(QPalette::Text,Qt::darkRed);
+        output_label->setPalette(palette);
+        output_label->setText(QString::fromStdString(constants::error_open_file_message));
+    }
 }
 
 void MainWindow::check_box_state_changed() {
@@ -36,13 +43,17 @@ void MainWindow::input_changed() {
         worker.set_input(val.toUtf8().constData(), is_seq_checkbox, input_version);
     }
 }
-
+void print(const std::string & str){
+    std::cout << str << '\n';
+    std::cout.flush();
+}
 void MainWindow::update_output() {
     if (updating)
         return;
     updating = true;
     retry:
     auto[res, input_v, output_v] = worker.get_output();
+
     if (last_printed_version == output_v) {
         updating = false;
         return;
@@ -54,29 +65,14 @@ void MainWindow::update_output() {
         updating = false;
         return;
     }
-    bool to_append = false;
-    QString str = format_output(res, input_v, output_v, to_append);
-    if (str.isEmpty()) {
+    bool input_changed_while_printing = format_output(res, input_v);
+    if (input_changed_while_printing || output_v != worker.output_version) {
         goto retry;
-    } else {
-        if (to_append) {
-            auto cursorPos = output_label->textCursor().position();
-            output_label->moveCursor(QTextCursor::End);
-            output_label->insertHtml(str);
-            QTextCursor cursor = output_label->textCursor();
-            cursor.setPosition(cursorPos, QTextCursor::MoveAnchor);
-            output_label->setTextCursor(cursor);
-        } else {
-            output_label->setText(str);
-        }
-        if (output_v != worker.output_version) {
-            goto retry;
-        }
     }
     updating = false;
 }
 
-QString MainWindow::format_output(const searching_result &result, uint64_t input_v, uint64_t output_v, bool &to_append) {
+bool MainWindow::format_output(const searching_result &result, uint64_t input_v) {
     std::stringstream ss;
     if (cur_output_version != result.input_version) {
         cur_output_version = result.input_version;
@@ -84,10 +80,9 @@ QString MainWindow::format_output(const searching_result &result, uint64_t input
         ss << "<b>" << result.input << "</b>";
         if (result.partial || !result.words.empty())
             ss << " :<br>";
-    } else {
-        to_append = true;
+        output_label->setText(QString::fromStdString(ss.str()));
+        ss.str(std::string());
     }
-
     for (size_t i = 0; i != result.words.size(); ++i) {
         if (!is_first_word) {
             ss << ", ";
@@ -97,10 +92,24 @@ QString MainWindow::format_output(const searching_result &result, uint64_t input
         ss << result.words[i];
         QApplication::processEvents(QEventLoop::AllEvents);
         if (input_v != input_version)
-            return QString();
+            return true;
+        if (i % 10000 == 0){
+            flush_output(ss);
+        }
     }
     if (!result.partial) {
         ss << "<br><br>Total occurrences number = <b>" << result.total_occurrences_number << "</b><br>";
     }
-    return QString::fromStdString(ss.str());
+    flush_output(ss);
+    return false;
+}
+
+void MainWindow::flush_output(std::stringstream & ss){
+    auto cursorPos = output_label->textCursor().position();
+    output_label->moveCursor(QTextCursor::End);
+    output_label->insertHtml(QString::fromStdString(ss.str()));
+    QTextCursor cursor = output_label->textCursor();
+    cursor.setPosition(cursorPos, QTextCursor::MoveAnchor);
+    output_label->setTextCursor(cursor);
+    ss.str(std::string());
 }

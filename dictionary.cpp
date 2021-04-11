@@ -3,9 +3,14 @@
 #include <vector>
 #include "dictionary.h"
 #include "dictionary_util.h"
+#include "constants.h"
 
 
-dictionary::dictionary(const std::string &filename) : fin(filename, std::ios_base::binary) {}
+dictionary::dictionary(const std::string &filename) : fin(filename, std::ios_base::binary) {
+    if (!fin.is_open()) {
+        std::cerr << constants::error_open_file_message;
+    }
+}
 
 void dictionary::read_occurrences_from_file() {
     if (!occurrences.empty())
@@ -43,7 +48,7 @@ std::unordered_set<size_t> dictionary::get_words_by_char(char ch, size_t num) {
     return result;
 }
 
-std::string  dictionary::search_sub_string(size_t pos, const std::string &input, const std::vector<int> &p_array) {
+std::string dictionary::search_sub_string(size_t pos, const std::string &input, const std::vector<int> &p_array) {
     std::string word;
     fin.clear();
     fin.seekg(pos);
@@ -57,4 +62,8 @@ std::string dictionary::search_sub_string_seq(size_t pos, const std::string &pat
     fin.seekg(pos);
     fin >> word;
     return dictionary_util::sub_string_seq_search(std::move(word), pattern);
+}
+
+bool dictionary::is_open() const {
+    return fin.is_open();
 }

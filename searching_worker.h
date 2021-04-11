@@ -25,16 +25,16 @@ public:
     std::tuple<searching_result, uint64_t, uint64_t> get_output();
     void set_input(std::optional<std::string> val, bool is_input_seq, uint64_t new_input_version);
 
+    dictionary dict;
 signals:
 
     void output_changed();
 
+
 private slots:
 
     void notify_output();
-
 private:
-    dictionary util;
     mutable std::mutex m;
     std::condition_variable input_changed;
     std::optional<std::string> input;

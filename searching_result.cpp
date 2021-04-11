@@ -11,4 +11,5 @@ searching_result::searching_result(searching_result &&other) noexcept: input(oth
                                                                        input_version(other.input_version),
                                                                        total_occurrences_number(
                                                                             other.total_occurrences_number) {
+    other.wait_to_take = false;
 }

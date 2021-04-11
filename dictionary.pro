@@ -2,25 +2,32 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++11
+CONFIG += c++2a
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    dictionary_util.cpp \
     main.cpp \
-    factoring_worker.cpp \
-    main_window.cpp
+    main_window.cpp \
+    dictionary.cpp \
+    searching_worker.cpp \
+    dictionary_util.cpp \
+    searching_result.cpp
 
 HEADERS += \
-    dictionary_util.h \
-    main_window.h \
-    factoring_worker.h
+        main_window.h \
+        dictionary.h \
+        searching_worker.h \
+        dictionary_util.h \
+        searching_result.h \
+        constants.h
 
 FORMS += \
     mainwindow.ui
+
+OTHER_FILES += words_processed.txt
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
