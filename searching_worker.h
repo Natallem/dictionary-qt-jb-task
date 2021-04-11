@@ -38,7 +38,7 @@ private:
     mutable std::mutex m;
     std::condition_variable input_changed;
     std::optional<std::string> input;
-    bool is_seq;
+    std::atomic<bool> is_seq;
     searching_result output;
     bool notify_output_queued = false;
     std::atomic<uint64_t > worker_input_version;

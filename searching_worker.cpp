@@ -1,10 +1,8 @@
 #include "searching_worker.h"
 #include "dictionary_util.h"
 #include "constants.h"
-#include "searching_result.h"
 #include <cassert>
 #include <unordered_set>
-#include <iostream>
 
 searching_worker::searching_worker()
         : dict(constants::processed_dictionary_file_name),

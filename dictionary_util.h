@@ -17,6 +17,10 @@ namespace dictionary_util {
 
     /* functions for generating input dictionary format with statistic from origin dictionary source*/
 
+    /*
+     * Copy dictionary in new file and write
+     *  map of [char]-[map of [number of chosen char in word]<->[position of such words in file of word]]
+     */
     void generate_dictionary(const std::string &input_filename, const std::string &output_filename);
 
     bool check_generate_dictionary(
@@ -26,7 +30,7 @@ namespace dictionary_util {
     bool check_same(const std::unordered_map<char, std::unordered_map<size_t, std::vector<size_t>>> &prev,
                     const std::unordered_map<char, std::unordered_map<size_t, std::vector<size_t>>> &new_);
 
-       std::string sub_string_seq_search(std::basic_string<char> &&word, const std::string &pattern);
+    std::string sub_string_seq_search(std::basic_string<char> &&word, const std::string &pattern);
 };
 
 

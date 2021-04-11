@@ -13,14 +13,15 @@ MainWindow::MainWindow(QWidget *parent)
     output_label->setAcceptRichText(true);
     output_label->setAlignment(Qt::AlignLeft);
     ui->scroll_area->setWidget(output_label);
-    if (worker.dict.is_open()){
+
+    if (worker.dict.is_open()) {
         output_label->setText("Loading dictionary...<br>");
         connect(ui->input_edit, &QLineEdit::textChanged, this, &MainWindow::input_changed);
         connect(ui->check_box, &QCheckBox::clicked, this, &MainWindow::check_box_state_changed);
         connect(&worker, &searching_worker::output_changed, this, &MainWindow::update_output);
     } else {
         QPalette palette;
-        palette.setColor(QPalette::Text,Qt::darkRed);
+        palette.setColor(QPalette::Text, Qt::darkRed);
         output_label->setPalette(palette);
         output_label->setText(QString::fromStdString(constants::error_open_file_message));
     }
@@ -43,10 +44,7 @@ void MainWindow::input_changed() {
         worker.set_input(val.toUtf8().constData(), is_seq_checkbox, input_version);
     }
 }
-void print(const std::string & str){
-    std::cout << str << '\n';
-    std::cout.flush();
-}
+
 void MainWindow::update_output() {
     if (updating)
         return;
@@ -65,14 +63,14 @@ void MainWindow::update_output() {
         updating = false;
         return;
     }
-    bool input_changed_while_printing = format_output(res, input_v);
+    bool input_changed_while_printing = show_output(res, input_v);
     if (input_changed_while_printing || output_v != worker.output_version) {
         goto retry;
     }
     updating = false;
 }
 
-bool MainWindow::format_output(const searching_result &result, uint64_t input_v) {
+bool MainWindow::show_output(const searching_result &result, uint64_t input_v) {
     std::stringstream ss;
     if (cur_output_version != result.input_version) {
         cur_output_version = result.input_version;
@@ -91,9 +89,11 @@ bool MainWindow::format_output(const searching_result &result, uint64_t input_v)
         }
         ss << result.words[i];
         QApplication::processEvents(QEventLoop::AllEvents);
-        if (input_v != input_version)
+        if (input_v != input_version) {
+
             return true;
-        if (i % 10000 == 0){
+        }
+        if (i % 10000 == 0) {
             flush_output(ss);
         }
     }
@@ -104,7 +104,7 @@ bool MainWindow::format_output(const searching_result &result, uint64_t input_v)
     return false;
 }
 
-void MainWindow::flush_output(std::stringstream & ss){
+void MainWindow::flush_output(std::stringstream &ss) {
     auto cursorPos = output_label->textCursor().position();
     output_label->moveCursor(QTextCursor::End);
     output_label->insertHtml(QString::fromStdString(ss.str()));
