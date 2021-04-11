@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
     output_label->setAlignment(Qt::AlignLeft);
     output_label->setText("Loading dictionary...<br>");
     ui->scroll_area->setWidget(output_label);
+//    ui->scroll_area->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     connect(ui->input_edit, &QLineEdit::textChanged, this, &MainWindow::input_changed);
     connect(ui->check_box, &QCheckBox::clicked, this, &MainWindow::check_box_state_changed);
@@ -22,8 +23,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::check_box_state_changed() {
     bool cur_checked = ui->check_box->isChecked();
-    if (is_checked != cur_checked) {
-        is_checked = cur_checked;
+    if (is_seq_checkbox != cur_checked) {
+        is_seq_checkbox = cur_checked;
         input_changed();
     }
 }
@@ -31,9 +32,9 @@ void MainWindow::check_box_state_changed() {
 void MainWindow::input_changed() {
     QString val = ui->input_edit->text();
     if (val.isEmpty()) {
-        worker.set_input(std::nullopt, is_checked);
+        worker.set_input(std::nullopt, is_seq_checkbox);
     } else {
-        worker.set_input(val.toUtf8().constData(), is_checked);
+        worker.set_input(val.toUtf8().constData(), is_seq_checkbox);
     }
 }
 
@@ -48,61 +49,64 @@ void MainWindow::update_output() {
     updating = true;
     retry:
     auto[res, input_v, output_v] = worker.get_output();
+    if (last_printed_version == output_v) {
+        updating = false;
+        return;
+    } else {
+        last_printed_version = output_v;
+    }
     if (res.input.empty()) {
         output_label->setText("");
         updating = false;
         return;
     }
     bool to_append = false;
-    QString str = format_output(res, input_v, to_append);
+    QString str = format_output(res, input_v, output_v, to_append);
     if (str.isEmpty()) {
         goto retry;
     } else {
         if (to_append) {
-            auto cur_cursor = output_label->textCursor().position();
+//            auto cur_cursor = output_label->textCursor().position();
             output_label->moveCursor(QTextCursor::End);
             output_label->insertHtml(str);
-            QTextCursor cursor = output_label->textCursor();
-            cursor.setPosition(cur_cursor, QTextCursor::MoveAnchor);
-            output_label->setTextCursor(cursor);
-//            output_label->append(str);
+//            QTextCursor cursor = output_label->textCursor();
+//            cursor.setPosition(cur_cursor, QTextCursor::MoveAnchor);
+//            output_label->setTextCursor(cursor);
         } else {
             output_label->setText(str);
         }
-        if (output_v != worker.output_version)
+        if (output_v != worker.output_version) {
             goto retry;
+        }
     }
     updating = false;
 }
 
-QString MainWindow::format_output(const searched_result &result, uint64_t input_v, bool &to_append) {
+QString MainWindow::format_output(const searched_result &result, uint64_t input_v, uint64_t output_v, bool &to_append) {
     std::stringstream ss;
-    if (cur_output_version != result.version) {
-        cur_output_version = result.version;
+    if (cur_output_version != result.input_version) {
+        cur_output_version = result.input_version;
         is_first_word = true;
-        ss << result.input;
+        ss << "<b>" << result.input << "</b>";
         if (result.partial || !result.words.empty())
             ss << " :<br>";
     } else {
         to_append = true;
     }
+
     for (size_t i = 0; i != result.words.size(); ++i) {
-        if (!is_first_word){
+        if (!is_first_word) {
             ss << ", ";
-        }else {
+        } else {
             is_first_word = false;
         }
         ss << result.words[i];
-        if (i % 10 == 0) {
-            QApplication::processEvents(QEventLoop::AllEvents);
-            if (input_v != worker.input_version)
-                return QString();
-        }
+        QApplication::processEvents(QEventLoop::AllEvents);
+        if (input_v != worker.input_version)
+            return QString();
     }
-
     if (!result.partial) {
         ss << "<br><br>Total occurrences number = <b>" << result.total_occurrences_number << "</b><br>";
     }
-
     return QString::fromStdString(ss.str());
 }

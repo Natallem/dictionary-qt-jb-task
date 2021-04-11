@@ -3,12 +3,12 @@
 #include <cassert>
 #include <unordered_set>
 
-searched_result::searched_result(uint64_t version) : version(version) {}
+searched_result::searched_result(uint64_t version) : input_version(version) {}
 
-searched_result::searched_result(std::string input, uint64_t version) : input(std::move(input)), version(version) {}
+searched_result::searched_result(std::string input, uint64_t version) : input(std::move(input)), input_version(version) {}
 
 searched_result::searched_result(searched_result &&other) noexcept: input(other.input), words(std::move(other.words)),
-                                                                    partial(other.partial), version(other.version),
+                                                                    partial(other.partial), input_version(other.input_version),
                                                                     total_occurrences_number(
                                                                             other.total_occurrences_number) {
 }
@@ -95,6 +95,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
         if (is_ok)
             to_check.push_back(word);
     }
+    std::sort(to_check.begin(), to_check.end());
     if (!is_cur_seq) {
         auto p_array = dictionary_util::p_array(initial_val);
         for (auto to_check_word : to_check) {
@@ -120,36 +121,32 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
 
 void searching_worker::complete_output_result(uint64_t last_input_version) {
     std::lock_guard lg(m);
-    if (output.version != last_input_version)
+    if (output.input_version != last_input_version)
         return;
     output.partial = false;
-    ++output_version;
-    if (!notify_output_queued) {
-        QMetaObject::invokeMethod(this, "notify_output");
-        notify_output_queued = true;
-    }
+    try_to_notify_output();
 }
 
 void searching_worker::add_new_word_to_output_result(uint64_t last_input_version, std::string &&word) {
     std::lock_guard lg(m);
-    if (output.version != last_input_version)
+    if (output.input_version != last_input_version)
         return;
     output.words.push_back(std::move(word));
     ++output.total_occurrences_number;
-    ++output_version;
-    if (!notify_output_queued) {
-        QMetaObject::invokeMethod(this, "notify_output");
-        notify_output_queued = true;
-    }
+    try_to_notify_output();
 }
 
 void searching_worker::store_new_output_result(uint64_t last_input_version, const std::string &input_str) {
     std::lock_guard lg(m);
-    output.version = last_input_version;
+    output.input_version = last_input_version;
     output.input = input_str;
     output.partial = !input_str.empty();
     output.words.clear();
     output.total_occurrences_number = 0;
+    try_to_notify_output();
+}
+
+void searching_worker::try_to_notify_output(){
     ++output_version;
     if (!notify_output_queued) {
         QMetaObject::invokeMethod(this, "notify_output");

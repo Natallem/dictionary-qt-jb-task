@@ -21,7 +21,7 @@ struct searched_result {
     std::vector<std::string> words;
     uint64_t total_occurrences_number = 0;
     bool partial = true;
-    uint64_t version = 0;
+    uint64_t input_version = 0;
 };
 
 class searching_worker : public QObject {
@@ -29,7 +29,6 @@ Q_OBJECT
 
 
 public:
-    void set_input(std::optional<std::string> val, bool is_input_seq);
 
     std::atomic<uint64_t> input_version;
     std::atomic<uint64_t> output_version;
@@ -38,9 +37,9 @@ public:
 
     ~searching_worker();
 
-//    void set_input(std::optional<std::string> val);
     std::tuple<searched_result, uint64_t, uint64_t> get_output();
 
+    void set_input(std::optional<std::string> val, bool is_input_seq);
 signals:
 
     void output_changed();
@@ -48,7 +47,6 @@ signals:
 private:
     void thread_process();
 
-    void store_result(std::optional<searched_result> const &result);
 
 private slots:
 
@@ -67,15 +65,14 @@ private:
 
     static uint64_t const INPUT_VERSION_QUIT = 0;
 
-    void search_words(uint64_t last_input_version, std::optional<std::string> &val);
-
     void search_words(uint64_t last_input_version, std::optional<std::string> &val, bool is_cur_seq);
-
-    void store_result(const searched_result &result);
 
     void add_new_word_to_output_result(uint64_t last_input_version, std::string &&word);
 
     void store_new_output_result(uint64_t last_input_version, const std::string &input_str);
 
     void complete_output_result(uint64_t last_input_version);
+
+    void try_to_notify_output();
+
 };
