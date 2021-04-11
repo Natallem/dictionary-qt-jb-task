@@ -41,7 +41,7 @@ private:
     QTextEdit *output_label;
 
     bool updating = false;
-
+    uint64_t input_version = searching_worker::INPUT_VERSION_QUIT + 1;
     void check_box_state_changed();
     uint64_t cur_output_version = 0;
     uint64_t last_printed_version = 0;

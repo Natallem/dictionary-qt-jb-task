@@ -14,7 +14,6 @@ MainWindow::MainWindow(QWidget *parent)
     output_label->setAlignment(Qt::AlignLeft);
     output_label->setText("Loading dictionary...<br>");
     ui->scroll_area->setWidget(output_label);
-//    ui->scroll_area->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
     connect(ui->input_edit, &QLineEdit::textChanged, this, &MainWindow::input_changed);
     connect(ui->check_box, &QCheckBox::clicked, this, &MainWindow::check_box_state_changed);
@@ -31,10 +30,11 @@ void MainWindow::check_box_state_changed() {
 
 void MainWindow::input_changed() {
     QString val = ui->input_edit->text();
+    ++input_version;
     if (val.isEmpty()) {
-        worker.set_input(std::nullopt, is_seq_checkbox);
+        worker.set_input(std::nullopt, is_seq_checkbox, input_version);
     } else {
-        worker.set_input(val.toUtf8().constData(), is_seq_checkbox);
+        worker.set_input(val.toUtf8().constData(), is_seq_checkbox, input_version);
     }
 }
 
@@ -102,7 +102,7 @@ QString MainWindow::format_output(const searched_result &result, uint64_t input_
         }
         ss << result.words[i];
         QApplication::processEvents(QEventLoop::AllEvents);
-        if (input_v != worker.input_version)
+        if (input_v != input_version)
             return QString();
     }
     if (!result.partial) {

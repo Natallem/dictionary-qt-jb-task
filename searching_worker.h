@@ -30,16 +30,16 @@ Q_OBJECT
 
 public:
 
-    std::atomic<uint64_t> input_version;
     std::atomic<uint64_t> output_version;
 
     searching_worker();
 
     ~searching_worker();
+    static uint64_t const INPUT_VERSION_QUIT = 0;
 
     std::tuple<searched_result, uint64_t, uint64_t> get_output();
+    void set_input(std::optional<std::string> val, bool is_input_seq, uint64_t new_input_version);
 
-    void set_input(std::optional<std::string> val, bool is_input_seq);
 signals:
 
     void output_changed();
@@ -60,10 +60,10 @@ private:
     bool is_seq;
     searched_result output;
     bool notify_output_queued = false;
+    std::atomic<uint64_t > worker_input_version;
 
     std::thread worker_thread;
 
-    static uint64_t const INPUT_VERSION_QUIT = 0;
 
     void search_words(uint64_t last_input_version, std::optional<std::string> &val, bool is_cur_seq);
 

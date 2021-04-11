@@ -15,7 +15,7 @@ searched_result::searched_result(searched_result &&other) noexcept: input(other.
 
 searching_worker::searching_worker()
         : util("..\\dic_2.txt"),
-          input_version(INPUT_VERSION_QUIT + 1),
+          worker_input_version(INPUT_VERSION_QUIT + 1),
           output_version(INPUT_VERSION_QUIT),
           output(0),
           worker_thread([this] {
@@ -24,24 +24,24 @@ searching_worker::searching_worker()
           }) {}
 
 searching_worker::~searching_worker() {
-    input_version = INPUT_VERSION_QUIT;
+    worker_input_version = INPUT_VERSION_QUIT;
     input_changed.notify_all();
     worker_thread.join();
 }
 
-void searching_worker::set_input(std::optional<std::string> val, bool is_input_seq) {
+void searching_worker::set_input(std::optional<std::string> val, bool is_input_seq, uint64_t new_input_version) {
     {
         std::lock_guard lg(m);
         input = std::move(val);
         is_seq = is_input_seq;
-        ++input_version;
+        worker_input_version = new_input_version;
     }
     input_changed.notify_all();
 }
 
 std::tuple<searched_result, uint64_t, uint64_t> searching_worker::get_output() {
     std::lock_guard lg(m);
-    return {searched_result(std::move(output)),input_version, output_version};
+    return {searched_result(std::move(output)),worker_input_version, output_version};
 }
 
 void searching_worker::thread_process() {
@@ -52,9 +52,9 @@ void searching_worker::thread_process() {
         {
             std::unique_lock lg(m);
             input_changed.wait(lg, [&] {
-                return input_version != last_input_version;
+                return worker_input_version != last_input_version;
             });
-            last_input_version = input_version;
+            last_input_version = worker_input_version;
             is_cur_seq = is_seq;
             if (last_input_version == INPUT_VERSION_QUIT)
                 break;
@@ -64,7 +64,7 @@ void searching_worker::thread_process() {
         if (input_copy)
             search_words(last_input_version, input_copy, is_cur_seq);
         else
-            store_new_output_result(last_input_version, "");//todo убрать обертку
+            store_new_output_result(last_input_version, "");
     }
 }
 
@@ -99,7 +99,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
     if (!is_cur_seq) {
         auto p_array = dictionary_util::p_array(initial_val);
         for (auto to_check_word : to_check) {
-            if (last_input_version != input_version)
+            if (last_input_version != worker_input_version)
                 return;
             std::string res = util.search_sub_string(to_check_word, initial_val, p_array);
             if (!res.empty()) {
@@ -108,7 +108,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
         }
     } else {
         for (auto to_check_word : to_check) {
-            if (last_input_version != input_version)
+            if (last_input_version != worker_input_version)
                 return;
             std::string res = util.search_sub_string_seq(to_check_word, initial_val);
             if (!res.empty()) {
