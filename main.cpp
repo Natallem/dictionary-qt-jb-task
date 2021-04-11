@@ -3,7 +3,7 @@
 #include "dictionary_util.h"
 
 int main(int argc, char *argv[]) {
-    bool gen = false;
+    bool gen = true;
     if (gen) {
         dictionary_util::generate_dictionary(constants::input_dictionary_file_name,
                                              constants::processed_dictionary_file_name);
