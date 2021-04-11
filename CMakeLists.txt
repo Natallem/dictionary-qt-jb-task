@@ -19,8 +19,12 @@ add_executable(${PROJECT_NAME}
         dictionary.h
         searching_worker.cpp
         searching_worker.h
-
-        dictionary_util.cpp dictionary_util.h)
+        dictionary_util.cpp
+        dictionary_util.h
+        searching_result.cpp
+        searching_result.h
+        constants.h
+        )
 
 if (NOT CMAKE_PREFIX_PATH)
     message(WARNING "CMAKE_PREFIX_PATH is not defined, you may need to set it "

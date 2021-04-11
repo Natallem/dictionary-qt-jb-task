@@ -1,22 +1,14 @@
 #include "searching_worker.h"
 #include "dictionary_util.h"
+#include "constants.h"
+#include "searching_result.h"
 #include <cassert>
 #include <unordered_set>
 
-searched_result::searched_result(uint64_t version) : input_version(version) {}
-
-searched_result::searched_result(std::string input, uint64_t version) : input(std::move(input)), input_version(version) {}
-
-searched_result::searched_result(searched_result &&other) noexcept: input(other.input), words(std::move(other.words)),
-                                                                    partial(other.partial), input_version(other.input_version),
-                                                                    total_occurrences_number(
-                                                                            other.total_occurrences_number) {
-}
-
 searching_worker::searching_worker()
-        : util("..\\dic_2.txt"),
-          worker_input_version(INPUT_VERSION_QUIT + 1),
-          output_version(INPUT_VERSION_QUIT),
+        : util(constants::processed_dictionary_file_name),
+          worker_input_version(constants::INPUT_VERSION_QUIT + 1),
+          output_version(constants::INPUT_VERSION_QUIT),
           output(0),
           worker_thread([this] {
               util.read_occurrences_from_file();
@@ -24,7 +16,7 @@ searching_worker::searching_worker()
           }) {}
 
 searching_worker::~searching_worker() {
-    worker_input_version = INPUT_VERSION_QUIT;
+    worker_input_version = constants::INPUT_VERSION_QUIT;
     input_changed.notify_all();
     worker_thread.join();
 }
@@ -39,9 +31,9 @@ void searching_worker::set_input(std::optional<std::string> val, bool is_input_s
     input_changed.notify_all();
 }
 
-std::tuple<searched_result, uint64_t, uint64_t> searching_worker::get_output() {
+std::tuple<searching_result, uint64_t, uint64_t> searching_worker::get_output() {
     std::lock_guard lg(m);
-    return {searched_result(std::move(output)),worker_input_version, output_version};
+    return {searching_result(std::move(output)), worker_input_version, output_version};
 }
 
 void searching_worker::thread_process() {
@@ -56,11 +48,10 @@ void searching_worker::thread_process() {
             });
             last_input_version = worker_input_version;
             is_cur_seq = is_seq;
-            if (last_input_version == INPUT_VERSION_QUIT)
+            if (last_input_version == constants::INPUT_VERSION_QUIT)
                 break;
             input_copy = std::move(input);
         }
-//        std::optional<searched_result> result;
         if (input_copy)
             search_words(last_input_version, input_copy, is_cur_seq);
         else
@@ -97,7 +88,7 @@ void searching_worker::search_words(uint64_t last_input_version, std::optional<s
     }
     std::sort(to_check.begin(), to_check.end());
     if (!is_cur_seq) {
-        auto p_array = dictionary_util::p_array(initial_val);
+        auto p_array = dictionary_util::p_array(initial_val); // for KMP algo
         for (auto to_check_word : to_check) {
             if (last_input_version != worker_input_version)
                 return;
@@ -146,7 +137,7 @@ void searching_worker::store_new_output_result(uint64_t last_input_version, cons
     try_to_notify_output();
 }
 
-void searching_worker::try_to_notify_output(){
+void searching_worker::try_to_notify_output() {
     ++output_version;
     if (!notify_output_queued) {
         QMetaObject::invokeMethod(this, "notify_output");

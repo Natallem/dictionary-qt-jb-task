@@ -14,6 +14,7 @@
 #include "ui_mainwindow.h"
 #include "searching_worker.h"
 #include "dictionary.h"
+#include "constants.h"
 
 namespace Ui {
     class MainWindow;
@@ -39,17 +40,16 @@ private:
     std::unique_ptr<Ui::MainWindow> ui;
     searching_worker worker;
     QTextEdit *output_label;
-
     bool updating = false;
-    uint64_t input_version = searching_worker::INPUT_VERSION_QUIT + 1;
-    void check_box_state_changed();
+    uint64_t input_version = constants::INPUT_VERSION_QUIT + 1;
     uint64_t cur_output_version = 0;
     uint64_t last_printed_version = 0;
     bool is_first_word = true;
+    bool is_seq_checkbox = false;
 
-    std::atomic<bool> is_seq_checkbox = false;
+    void check_box_state_changed();
 
-    QString format_output(const searched_result &result, uint64_t input_v, uint64_t output_v, bool &to_append);
+    QString format_output(const searching_result &result, uint64_t input_v, uint64_t output_v, bool &to_append);
 };
 
 #endif // MAIN_WINDOW_H

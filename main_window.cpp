@@ -1,4 +1,3 @@
-#include <iostream>
 #include <QColorDialog>
 #include "main_window.h"
 
@@ -8,7 +7,7 @@ MainWindow::MainWindow(QWidget *parent)
     QLineEdit &input_line = *(ui->input_edit);
     input_line.setFixedHeight(input_line.fontMetrics().height() * 2);
 
-    output_label = new QTextEdit();
+    output_label = new QTextEdit(ui->scroll_area);
     output_label->setReadOnly(true);
     output_label->setAcceptRichText(true);
     output_label->setAlignment(Qt::AlignLeft);
@@ -38,11 +37,6 @@ void MainWindow::input_changed() {
     }
 }
 
-void print(const std::string &str) {
-    std::cout << str << "\n";
-    std::cout.flush();
-}
-
 void MainWindow::update_output() {
     if (updating)
         return;
@@ -66,12 +60,12 @@ void MainWindow::update_output() {
         goto retry;
     } else {
         if (to_append) {
-//            auto cur_cursor = output_label->textCursor().position();
+            auto cursorPos = output_label->textCursor().position();
             output_label->moveCursor(QTextCursor::End);
             output_label->insertHtml(str);
-//            QTextCursor cursor = output_label->textCursor();
-//            cursor.setPosition(cur_cursor, QTextCursor::MoveAnchor);
-//            output_label->setTextCursor(cursor);
+            QTextCursor cursor = output_label->textCursor();
+            cursor.setPosition(cursorPos, QTextCursor::MoveAnchor);
+            output_label->setTextCursor(cursor);
         } else {
             output_label->setText(str);
         }
@@ -82,7 +76,7 @@ void MainWindow::update_output() {
     updating = false;
 }
 
-QString MainWindow::format_output(const searched_result &result, uint64_t input_v, uint64_t output_v, bool &to_append) {
+QString MainWindow::format_output(const searching_result &result, uint64_t input_v, uint64_t output_v, bool &to_append) {
     std::stringstream ss;
     if (cur_output_version != result.input_version) {
         cur_output_version = result.input_version;

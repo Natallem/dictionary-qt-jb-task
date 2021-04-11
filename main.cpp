@@ -1,18 +1,16 @@
 #include "main_window.h"
-#include <QPushButton>
 #include <QApplication>
-#include <iostream>
 #include "dictionary_util.h"
+
 int main(int argc, char *argv[])
 {
-//    std::string pattern = "od";
-//    std::string str = "helloodfios";
-//    str.insert(4, "hello");
-//    dictionary_util::sub_string_search(std::move(str), pattern,dictionary_util::p_array(pattern));
-//    std::cout << dictionary_util::sub_string_search_seq(std::move(str), pattern,dictionary_util::p_array(pattern));
-//    std::cout << dictionary_util::sub_string_seq_search(std::move(str), pattern);
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
-    return a.exec();
+    bool gen = false;
+    if (gen){
+        dictionary_util::generate_dictionary(constants::input_dictionary_file_name, constants::processed_dictionary_file_name);
+    } else {
+        QApplication a(argc, argv);
+        MainWindow w;
+        w.show();
+        return a.exec();
+    }
 }

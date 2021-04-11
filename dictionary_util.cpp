@@ -1,12 +1,10 @@
-//
-// Created by lnv20 on 10.04.2021.
-//
-
 #include "dictionary_util.h"
+#include "constants.h"
 #include <string>
 #include <unordered_map>
 #include <iomanip>
 #include <vector>
+#include <iostream>
 
 std::string dictionary_util::sub_string_search(std::string &&str, const std::string &pattern,
                                                const std::vector<int> &p_array) {
@@ -20,7 +18,6 @@ std::string dictionary_util::sub_string_search(std::string &&str, const std::str
             tail++;
 
         if (tail == pattern.size() - 1) {
-//            return std::move(str);
             return std::move(str.insert(i + 1, "</b>").insert(i - tail, "<b>"));
         }
     }
@@ -47,8 +44,8 @@ std::string dictionary_util::sub_string_seq_search(std::basic_string<char> &&wor
         }
         res += word[ptr_word];
     }
-    if (bold_is_open){
-        res +=  "</b>";
+    if (bold_is_open) {
+        res += "</b>";
     }
     if (ptr_pattern == pattern.size()) {
         res += word.substr(ptr_word, word.size());
@@ -88,9 +85,9 @@ void dictionary_util::generate_dictionary(const std::string &input_filename, con
     fin.clear();
     fin.seekg(0);
     std::ofstream fout(output_filename, std::ios_base::binary);
-    position += margin_char_length;
+    position += constants::margin_char_length;
     std::string pos_str = std::to_string(position) + '\n';
-    fout << std::setw(margin_char_length) << pos_str << std::setw(0);
+    fout << std::setw(constants::margin_char_length) << pos_str << std::setw(0);
     while (fin >> cur_world) {
         fout << cur_world << '\n';
     }
@@ -99,18 +96,18 @@ void dictionary_util::generate_dictionary(const std::string &input_filename, con
         for (auto &pair2 : pair1.second) {
             fout << std::to_string(pair2.first) << ' ' << std::to_string(pair2.second.size()) << ' ';
             for (auto num : pair2.second) {
-                fout << std::to_string(num + margin_char_length) << ' ';
+                fout << std::to_string(num + constants::margin_char_length) << ' ';
             }
             fout << '\n';
         }
     }
     fin.close();
     fout.close();
-//    if (check_generate_dictionary_util(output_filename, occurrences)){
-//        std::cout << "ok!";
-//    } else {
-//        std::cout  << "not ok!";
-//    }
+    if (check_generate_dictionary(output_filename, occurrences)) {
+        std::cout << "generated successful :)";
+    } else {
+        std::cout << "generated not successful :(";
+    }
 }
 
 bool dictionary_util::check_generate_dictionary(const std::string &input_filename,
@@ -135,7 +132,8 @@ bool dictionary_util::check_generate_dictionary(const std::string &input_filenam
                 std::string cur_position_str;
                 fin >> cur_position_str;
                 int cur_position = std::stoi(cur_position_str);
-                cur_occurrences[cur_char[0]][cur_char_occurrence_number].push_back(cur_position - margin_char_length);
+                cur_occurrences[cur_char[0]][cur_char_occurrence_number].push_back(
+                        cur_position - constants::margin_char_length);
             }
         }
     }
